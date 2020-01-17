@@ -1,9 +1,10 @@
 
-
 import 'package:esense_flutter/model/question.dart';
 import 'package:flutter/foundation.dart';
 
 class Set with ChangeNotifier {
+  Set();
+
   String _name;
   List<Question> _questions = [];
 
@@ -23,11 +24,18 @@ class Set with ChangeNotifier {
     notifyListeners();
   }
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toJson() {
     return {
       'name': name,
-      'questions': questions.map((question) => question.toMap())
+      'questions': questions.map((question) => question.toJson())
     };
+  }
+
+  Set.fromJson(Map<String, dynamic> json) {
+    name = json['name'];
+    for (int i = 0; i < json['questions'].length; i++) {
+      addQuestion(Question.fromJson(json['questions'][i]));
+    }
   }
 
   @override

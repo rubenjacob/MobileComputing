@@ -1,9 +1,10 @@
 
-
 import 'package:esense_flutter/model/answer.dart';
 import 'package:flutter/foundation.dart';
 
 class Question with ChangeNotifier {
+  Question();
+
   String _question;
   List<Answer> _answers = [];
 
@@ -22,11 +23,18 @@ class Question with ChangeNotifier {
     _answers.remove(answer);
   }
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toJson() {
     return {
       'question': question,
-      'answers': answers.map((answer) => answer.toMap())
+      'answers': answers.map((answer) => answer.toJson())
     };
+  }
+
+  Question.fromJson(Map<String, dynamic> json) {
+    question = json['question'];
+    for (int i = 0; i < json['answers'].length; i++) {
+      addAnswer(Answer.fromJson(json['answers'][i]));
+    }
   }
 
   @override
