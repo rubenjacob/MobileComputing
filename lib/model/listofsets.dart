@@ -17,13 +17,14 @@ class ListOfSets with ChangeNotifier {
   }
 
   Map<String, dynamic> toJson() {
+    final jsonSets = sets.map((set) => set.toJson()).toList();
     return ({
-      'sets': sets.map((set) => set.toJson())
+      'sets': jsonSets
     });
   }
 
   ListOfSets.fromJson(Map<String, dynamic> json) {
-    for (int i = 0; i < json['sets']; i++) {
+    for (int i = 0; i < json['sets'].length; i++) {
       addSet(Set.fromJson(json['sets'][i]));
     }
   }

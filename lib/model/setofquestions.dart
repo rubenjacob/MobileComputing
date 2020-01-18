@@ -25,9 +25,10 @@ class Set with ChangeNotifier {
   }
 
   Map<String, dynamic> toJson() {
+    final questionsJson = questions.map((question) => question.toJson()).toList();
     return {
       'name': name,
-      'questions': questions.map((question) => question.toJson())
+      'questions': questionsJson
     };
   }
 

@@ -1,15 +1,18 @@
-import 'package:esense_flutter/model/listofsets.dart';
 import 'package:esense_flutter/model/setofquestions.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-class NewSetForm extends StatelessWidget {
+class NewSetForm extends StatefulWidget {
+  @override
+  State<StatefulWidget> createState() => NewSetFormState();
+}
+
+class NewSetFormState extends State<NewSetForm> {
   final _formKey = GlobalKey<FormState>();
   final textController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
-    final listOfSets = Provider.of<ListOfSets>(context);
+    final Set _set = ModalRoute.of(context).settings.arguments;
     return Scaffold(
         appBar: AppBar(title: Text('Enter a name')),
         body: Center(
@@ -35,9 +38,7 @@ class NewSetForm extends StatelessWidget {
                         child: RaisedButton(
                           onPressed: () {
                             if (_formKey.currentState.validate()) {
-                              final set = Set();
-                              set.name = textController.text;
-                              listOfSets.addSet(set);
+                              _set.name = textController.text;
                               Navigator.pop(context);
                             }
                           },
