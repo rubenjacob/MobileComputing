@@ -39,6 +39,6 @@ class Answer with ChangeNotifier {
 
   @override
   String toString() {
-    return 'Answer{answer: $answer, correct: $correct}';
+    return '$answer';
   }
 }

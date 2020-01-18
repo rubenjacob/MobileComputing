@@ -1,5 +1,4 @@
-
-import 'package:esense_flutter/model/question.dart';
+import 'package:esense_quiz/model/question.dart';
 import 'package:flutter/foundation.dart';
 
 class Set with ChangeNotifier {

@@ -1,5 +1,4 @@
-
-import 'package:esense_flutter/model/answer.dart';
+import 'package:esense_quiz/model/answer.dart';
 import 'package:flutter/foundation.dart';
 
 class Question with ChangeNotifier {
@@ -19,16 +18,14 @@ class Question with ChangeNotifier {
     _answers.add(answer);
     notifyListeners();
   }
+
   removeAnswer(Answer answer) {
     _answers.remove(answer);
   }
 
   Map<String, dynamic> toJson() {
     final answersJson = answers.map((answer) => answer.toJson()).toList();
-    return {
-      'question': question,
-      'answers': answersJson
-    };
+    return {'question': question, 'answers': answersJson};
   }
 
   Question.fromJson(Map<String, dynamic> json) {
@@ -40,6 +37,7 @@ class Question with ChangeNotifier {
 
   @override
   String toString() {
-    return 'Question{question: $question}';
+    return '$question. Answer A: ${answers[0]}. B: ${answers[1]}.'
+        + 'C: ${answers[2]}. D: ${answers[3]}.';
   }
 }

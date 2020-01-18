@@ -1,5 +1,5 @@
-import 'package:esense_flutter/model/answer.dart';
-import 'package:esense_flutter/model/question.dart';
+import 'package:esense_quiz/model/answer.dart';
+import 'package:esense_quiz/model/question.dart';
 import 'package:flutter/material.dart';
 
 class QuestionView extends StatefulWidget {

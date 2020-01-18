@@ -1,4 +1,4 @@
-name: esense_flutter
+name: esense_quiz
 description: A new Flutter application.
 
 # The following defines the version and build number for your application.
@@ -22,6 +22,8 @@ dependencies:
   provider: ^3.0.0
   json_annotation: ^3.0.0
   path_provider: ^1.5.1
+  flutter_tts: ^0.8.6
+  esense_flutter: 0.2.0
 
 dev_dependencies:
   flutter_test:

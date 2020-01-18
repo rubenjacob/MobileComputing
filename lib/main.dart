@@ -1,12 +1,12 @@
 import 'dart:convert';
 
-import 'package:esense_flutter/model/listofsets.dart';
-import 'package:esense_flutter/model/setofquestions.dart';
+import 'package:esense_quiz/model/listofsets.dart';
+import 'package:esense_quiz/model/setofquestions.dart';
 
-import 'package:esense_flutter/screens/newsetform.dart';
-import 'package:esense_flutter/screens/playview.dart';
-import 'package:esense_flutter/screens/questionview.dart';
-import 'package:esense_flutter/screens/setview.dart';
+import 'package:esense_quiz/screens/newsetform.dart';
+import 'package:esense_quiz/screens/playview.dart';
+import 'package:esense_quiz/screens/questionview.dart';
+import 'package:esense_quiz/screens/setview.dart';
 
 import 'dart:async';
 import 'dart:io';

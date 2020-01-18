@@ -1,4 +1,4 @@
-import 'package:esense_flutter/model/setofquestions.dart';
+import 'package:esense_quiz/model/setofquestions.dart';
 import 'package:flutter/material.dart';
 
 class NewSetForm extends StatefulWidget {
