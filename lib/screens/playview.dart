@@ -1,9 +1,14 @@
+import 'dart:async';
+import 'dart:math';
+import 'dart:core';
+
+import 'package:dart_numerics/dart_numerics.dart';
 import 'package:esense_quiz/model/question.dart';
 import 'package:esense_quiz/model/setofquestions.dart';
 import 'package:flutter/material.dart';
-import 'dart:math';
 
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:esense_flutter/esense.dart';
 
 class PlayView extends StatefulWidget {
   @override
@@ -15,21 +20,196 @@ enum TtsState { playing, stopped }
 class PlayViewState extends State<PlayView> {
   List<Question> playlist;
   int current = 0;
-  final FlutterTts  flutterTts = FlutterTts();
-  TtsState ttsState = TtsState.stopped;
 
+  final FlutterTts flutterTts = FlutterTts();
+  TtsState ttsState = TtsState.stopped;
   bool get isPlaying => ttsState == TtsState.playing;
+  bool _question = false;
+
+  final _deviceName = 'eSense-0830';
+  bool _connected = false;
+  bool get isConnected => _connected;
+  final _samplingRate = 20;
+  final _answerTime = 4;
+  final _stillThresh = 1;
 
   @override
   initState() {
     super.initState();
     initTts();
+    connectToEsense();
   }
 
   @override
   dispose() {
     super.dispose();
     flutterTts.stop();
+    disconnectFromEsense();
+  }
+
+  connectToEsense() async {
+    bool connected = await ESenseManager.connect(_deviceName);
+    if (connected) {
+      setState(() {
+        _connected = connected;
+      });
+      ESenseManager.setSamplingRate(_samplingRate);
+    }
+  }
+
+  disconnectFromEsense() async {
+    bool disconnected = await ESenseManager.disconnect();
+    setState(() {
+      _connected = !disconnected;
+    });
+  }
+
+  waitForAnswer() async {
+    bool connected = await ESenseManager.isConnected();
+    if (connected) {
+      List<List<int>> acceleration = [];
+      StreamSubscription subscription =
+          ESenseManager.sensorEvents.listen((event) {
+        acceleration.add(event.accel);
+      });
+      await Future.delayed(Duration(seconds: _answerTime), () {
+        subscription.cancel();
+      });
+
+      List<List<double>> movement = calculateMovement(acceleration);
+      int direction = identifyDirection(movement);
+
+      if (direction == -1) {
+        var result =
+            await flutterTts.speak('Your answer could not be recognized.');
+        if (result == 1) {
+          setState(() {
+            _question = false;
+            ttsState = TtsState.playing;
+          });
+        }
+      } else {
+        String response = (playlist[current].answers[direction].correct
+            ? 'That is correct.'
+            : 'That is false.');
+        var result = await flutterTts.speak(response);
+        if (result == 1) {
+          setState(() {
+            _question = false;
+            ttsState = TtsState.playing;
+          });
+        }
+      }
+    } else {
+      setState(() {
+        _connected = false;
+      });
+    }
+  }
+
+  //identify the movement
+  List<List<double>> calculateMovement(List<List<int>> accel) {
+    List<List<double>> angles =
+        accel.map((data) => accelAngles(data[0], data[1], data[2])).toList();
+
+    //calculate bias of inital state from first five measurements
+    List<double> initialBias = calculateAverages(angles.sublist(0, 5));
+
+    //find start of the movement
+    int startIndex = 0;
+    for (int i = 0; i < angles.length - 5; i++) {
+      if (!isStill(angles[i], initialBias)) {
+        startIndex = i;
+        break;
+      }
+    }
+
+    //find end of the movement
+    int endIndex = startIndex + 1;
+    outerLoop:
+    for (int i = endIndex; i < angles.length; i++) {
+      //endIndex is at end of list
+      if (i + 5 == angles.length - 1) {
+        endIndex = i;
+        break outerLoop;
+      }
+
+      //find window of 5 measurements that are all similar
+      List<List<double>> window = angles.sublist(i, i + 5);
+      List<double> averages = calculateAverages(window);
+      for (int j = 0; j < 5; j++) {
+        if (!isStill(window[j], averages)) {
+          continue outerLoop;
+        }
+      }
+      endIndex = i;
+      break outerLoop;
+    }
+
+    //return part of the input that wasn't still
+    return angles.sublist(startIndex, endIndex + 1);
+  }
+
+  //identify the direction of the movement
+  int identifyDirection(List<List<double>> movement) {
+    double zMin = movement[0][2];
+    double zMax = movement[0][2];
+    int l = movement.length;
+    for (int i = 0; i < l; i++) {
+      if (movement[i][2] > zMax) {
+        zMax = movement[i][2];
+      } else if (movement[i][2] < zMin) {
+        zMin = movement[i][2];
+      }
+    }
+    //left or right rotation
+    if ((zMax - zMin).abs() > 10.0) {
+      if (movement[0][2] > movement[l - 1][2]) {
+        return 2;
+      } else {
+        return 3;
+      }
+    }
+    //up or down rotation
+    else {
+      if (movement[0][0] < movement[l - 1][0] &&
+          movement[0][1] > movement[l - 1][1]) {
+        return 1;
+      } else if (movement[0][0] > movement[l - 1][0] &&
+          movement[0][1] < movement[l - 1][1]) {
+        return 0;
+      } else {
+        return -1;
+      }
+    }
+  }
+
+  bool isStill(List<double> angles, List<double> averages) {
+    if ((angles[0] - averages[0]).abs() > _stillThresh ||
+        (angles[1] - averages[1]).abs() > _stillThresh ||
+        (angles[2] - averages[2]).abs() > _stillThresh) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  List<double> calculateAverages(List<List<double>> data) {
+    List<double> sum = [0.0, 0.0, 0.0];
+    for (List<double> x in data) {
+      sum[0] += x[0];
+      sum[1] += x[1];
+      sum[2] += x[2];
+    }
+    double l = data.length.toDouble();
+    return [sum[0] / l, sum[1] / l, sum[2] / l];
+  }
+
+  List<double> accelAngles(int ax, int ay, int az) {
+    double roll = atan2(ay, sqrt(pow(ax, 2.0) + pow(az, 2.0))) * 180 / pi;
+    double pitch = atan2(ax, sqrt(pow(ay, 2.0) + pow(az, 2.0))) * 180 / pi;
+    double yaw = atan2(az, sqrt(pow(ax, 2.0) + pow(az, 2.0))) * 180 / pi;
+    return [roll, pitch, yaw];
   }
 
   Future initTts() async {
@@ -42,6 +222,12 @@ class PlayViewState extends State<PlayView> {
       setState(() {
         ttsState = TtsState.stopped;
       });
+      if (_question) {
+        waitForAnswer();
+      } else if (current < playlist.length - 1){
+        onNextPressed();
+        togglePlaying();
+      }
     });
     flutterTts.setErrorHandler((error) {
       setState(() {
@@ -50,7 +236,7 @@ class PlayViewState extends State<PlayView> {
     });
     await flutterTts.setLanguage('en-US');
     await flutterTts.setVolume(1.0);
-    await flutterTts.setSpeechRate(0.25);
+    await flutterTts.setSpeechRate(0.45);
     await flutterTts.setPitch(1.0);
   }
 
@@ -80,6 +266,7 @@ class PlayViewState extends State<PlayView> {
       var result = await flutterTts.speak(playlist[current].toString());
       if (result == 1) {
         setState(() {
+          _question = true;
           ttsState = TtsState.playing;
         });
       }
@@ -90,6 +277,8 @@ class PlayViewState extends State<PlayView> {
     setState(() {
       if (current < playlist.length - 1) {
         current++;
+      } else {
+
       }
     });
   }
@@ -109,13 +298,21 @@ class PlayViewState extends State<PlayView> {
       playlist = set.questions;
     });
 
-
     return Scaffold(
-      appBar: AppBar(title: Text('Playing ${set.name}'),),
+      appBar: AppBar(
+        title: Text('Playing ${set.name}'),
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Icon(isConnected ? Icons.check : Icons.cancel),
+                Text(isConnected ? 'Connected' : 'Disconnected'),
+              ],
+            ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
@@ -126,8 +323,8 @@ class PlayViewState extends State<PlayView> {
                 ),
                 IconButton(
                   icon: (isPlaying
-                    ? Icon(Icons.stop)
-                    : Icon(Icons.play_circle_filled)),
+                      ? Icon(Icons.stop)
+                      : Icon(Icons.play_circle_filled)),
                   iconSize: 72,
                   onPressed: togglePlaying,
                 ),
@@ -185,5 +382,4 @@ class PlayViewState extends State<PlayView> {
       ),
     );
   }
-
 }

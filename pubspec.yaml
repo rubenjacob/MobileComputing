@@ -24,6 +24,7 @@ dependencies:
   path_provider: ^1.5.1
   flutter_tts: ^0.8.6
   esense_flutter: 0.2.0
+  dart_numerics: ^0.0.5
 
 dev_dependencies:
   flutter_test:

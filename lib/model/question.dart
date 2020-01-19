@@ -37,7 +37,7 @@ class Question with ChangeNotifier {
 
   @override
   String toString() {
-    return '$question. Answer A: ${answers[0]}. B: ${answers[1]}.'
-        + 'C: ${answers[2]}. D: ${answers[3]}.';
+    return '$question. Up: ${answers[0]}. Down: ${answers[1]}.'
+        + 'Left: ${answers[2]}. Right: ${answers[3]}.';
   }
 }
