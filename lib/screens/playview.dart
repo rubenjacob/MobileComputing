@@ -20,6 +20,8 @@ enum TtsState { playing, stopped }
 class PlayViewState extends State<PlayView> {
   List<Question> playlist;
   int current = 0;
+  int answered = 0;
+  int answeredCorrectly = 0;
 
   final FlutterTts flutterTts = FlutterTts();
   TtsState ttsState = TtsState.stopped;
@@ -59,9 +61,6 @@ class PlayViewState extends State<PlayView> {
 
   disconnectFromEsense() async {
     bool disconnected = await ESenseManager.disconnect();
-    setState(() {
-      _connected = !disconnected;
-    });
   }
 
   waitForAnswer() async {
@@ -89,14 +88,17 @@ class PlayViewState extends State<PlayView> {
           });
         }
       } else {
-        String response = (playlist[current].answers[direction].correct
-            ? 'That is correct.'
-            : 'That is false.');
+        bool correct = playlist[current].answers[direction].correct;
+        String response = correct ? 'That is correct.' : 'That is false.';
         var result = await flutterTts.speak(response);
         if (result == 1) {
           setState(() {
             _question = false;
             ttsState = TtsState.playing;
+            answered++;
+            if (correct) {
+              answeredCorrectly++;
+            }
           });
         }
       }
@@ -205,6 +207,7 @@ class PlayViewState extends State<PlayView> {
     return [sum[0] / l, sum[1] / l, sum[2] / l];
   }
 
+  //https://engineering.stackexchange.com/questions/3348/calculating-pitch-yaw-and-roll-from-mag-acc-and-gyro-data
   List<double> accelAngles(int ax, int ay, int az) {
     double roll = atan2(ay, sqrt(pow(ax, 2.0) + pow(az, 2.0))) * 180 / pi;
     double pitch = atan2(ax, sqrt(pow(ay, 2.0) + pow(az, 2.0))) * 180 / pi;
@@ -224,7 +227,7 @@ class PlayViewState extends State<PlayView> {
       });
       if (_question) {
         waitForAnswer();
-      } else if (current < playlist.length - 1){
+      } else if (current < playlist.length - 1) {
         onNextPressed();
         togglePlaying();
       }
@@ -277,9 +280,7 @@ class PlayViewState extends State<PlayView> {
     setState(() {
       if (current < playlist.length - 1) {
         current++;
-      } else {
-
-      }
+      } else {}
     });
   }
 
@@ -335,10 +336,12 @@ class PlayViewState extends State<PlayView> {
                 ),
               ],
             ),
+            Text('Question ${current + 1}/${playlist.length}'),
+            Text('$answeredCorrectly/$answered answered correctly'),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12.0),
               child: SizedBox(
-                height: 400,
+                height: 380,
                 child: Card(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12.0),
@@ -352,24 +355,48 @@ class PlayViewState extends State<PlayView> {
                           thickness: 2.0,
                           color: Colors.blue,
                         ),
-                        Text(
-                          'a) ' + playlist[current].answers[0].answer,
-                          style: TextStyle(height: 1.75, fontSize: 18),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            Icon(Icons.arrow_upward),
+                            Text(
+                              playlist[current].answers[0].answer,
+                              style: TextStyle(height: 1.75, fontSize: 18),
+                            ),
+                          ],
                         ),
                         Divider(),
-                        Text(
-                          'b) ' + playlist[current].answers[1].answer,
-                          style: TextStyle(height: 1.75, fontSize: 18),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            Icon(Icons.arrow_downward),
+                            Text(
+                              playlist[current].answers[1].answer,
+                              style: TextStyle(height: 1.75, fontSize: 18),
+                            ),
+                          ],
                         ),
                         Divider(),
-                        Text(
-                          'c) ' + playlist[current].answers[2].answer,
-                          style: TextStyle(height: 1.75, fontSize: 18),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            Icon(Icons.arrow_back),
+                            Text(
+                              playlist[current].answers[2].answer,
+                              style: TextStyle(height: 1.75, fontSize: 18),
+                            ),
+                          ],
                         ),
                         Divider(),
-                        Text(
-                          'd) ' + playlist[current].answers[3].answer,
-                          style: TextStyle(height: 1.75, fontSize: 18),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            Icon(Icons.arrow_forward),
+                            Text(
+                              playlist[current].answers[3].answer,
+                              style: TextStyle(height: 1.75, fontSize: 18),
+                            ),
+                          ],
                         ),
                       ],
                     ),

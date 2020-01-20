@@ -83,6 +83,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 }
 
 class JsonStorage {
+  final String _filename = 'my_data.json';
+
   Future<String> get _localPath async {
     final directory = await getApplicationDocumentsDirectory();
     return directory.path;
@@ -90,7 +92,7 @@ class JsonStorage {
 
   Future<File> get _localFile async {
     final path = await _localPath;
-    final file = File('$path/data.json');
+    final file = File('$path/$_filename');
     if (await file.exists()) {
       return file;
     } else {
